@@ -796,7 +796,7 @@ public class Room : MonoBehaviour
             RoomGenerator.Instance.Doors.Add(door);
             door.transform.parent = null;
             door.SetActive(true);
-            if (roomType == RoomType.Normal || roomType == RoomType.Boss || roomType == RoomType.Start || roomType == RoomType.ChallengeRoom) return;
+            if (roomType == RoomType.Normal || roomType == RoomType.Boss || roomType == RoomType.Start || roomType == RoomType.Secret || roomType == RoomType.ChallengeRoom) return;
             if (RogueDifficultyManager.Instance.floor == 1) return;
             if (Random.value <= 0.75f && Plugin.CurrentDifficulty != 2) return;
 

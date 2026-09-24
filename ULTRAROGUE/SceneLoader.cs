@@ -109,6 +109,20 @@ public static class SceneLoader
         }}
     };
 
+    public static string GetMessage()
+    {
+        string randomMessage = messages[Random.Range(0, messages.Length)];
+        if (SteamClient.IsValid && SteamClient.IsLoggedOn)
+        {
+            if (customMessagesForYoutubers.ContainsKey(SteamClient.SteamId) && Random.value <= 0.25f)
+            {
+                string[] userMessages = customMessagesForYoutubers[SteamClient.SteamId];
+                randomMessage = userMessages[Random.Range(0, userMessages.Length)];
+            }
+        }
+        return randomMessage;
+    }
+
     static bool LoadingScene = false;
 
     /// <summary> Asynchronously loads the Empty level. </summary>
@@ -123,15 +137,7 @@ public static class SceneLoader
         {
             SceneHelper.Instance.loadingBlocker.SetActive(true);
 
-            string randomMessage = messages[Random.Range(0, messages.Length)];
-            if (SteamClient.IsValid && SteamClient.IsLoggedOn)
-            {
-                if (customMessagesForYoutubers.ContainsKey(SteamClient.SteamId) && Random.value <= 0.25f)
-                {
-                    string[] userMessages = customMessagesForYoutubers[SteamClient.SteamId];
-                    randomMessage = userMessages[Random.Range(0, userMessages.Length)];
-                }
-            }
+            string randomMessage = GetMessage();
             SceneHelper.SetLoadingSubtext(randomMessage);
             yield return null;
         }

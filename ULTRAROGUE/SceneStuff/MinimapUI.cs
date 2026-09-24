@@ -25,6 +25,7 @@ public class MinimapUI : MonoBehaviour
     public Color colorShop = new Color(0.22f, 0.52f, 0.95f);
     public Color colorGambling = new Color(0.72f, 0.22f, 0.92f);
     public Color colorPlanet = new Color(0f, 0f, 0.95f);
+    public Color colorSecret = new Color(0.6431f, 0.1059f, 0.3333f);
     public Color colorChallenge = new Color(0.95f, 0.45f, 0.05f);
 
     [Header("UI Colors")]
@@ -35,7 +36,8 @@ public class MinimapUI : MonoBehaviour
     [Tooltip("Rooms with a unique room-type color (boss, treasure, shop, etc.) that have " +
              "been scouted but not yet visited will show a darkened version of their real " +
              "color instead of the plain grey silhouette, hinting at what's nearby. " +
-             "Normal rooms still use colorSilhouette.")]
+             "Normal rooms still use colorSilhouette. Secret rooms are never previewed this " +
+             "way — they stay fully hidden until visited.")]
     [Range(0.1f, 0.8f)]
     public float scoutedSpecialDarkness = 0.35f;
 
@@ -642,11 +644,12 @@ public class MinimapUI : MonoBehaviour
             }
             else if (_visited.Contains(pos))
                 desired = RoomColor(_placedRooms[pos].roomType) * 0.90f;
-            else if (_scouted.Contains(pos))
+            else if (IsEffectivelyScouted(pos))
             {
                 // Special room types get a darkened preview of their real color so
                 // players get a hint of what's there without it looking fully explored.
-                // Plain normal rooms keep the generic grey silhouette.
+                // Plain normal rooms keep the generic grey silhouette. Secret rooms never
+                // reach this branch — see IsEffectivelyScouted.
                 if (_placedRooms.TryGetValue(pos, out var scoutedRoom) &&
                     IsSpecialRoomType(scoutedRoom.roomType))
                     desired = DarkenKeepAlpha(RoomColor(scoutedRoom.roomType), scoutedSpecialDarkness);
@@ -678,11 +681,32 @@ public class MinimapUI : MonoBehaviour
             Vector2Int dir = kvp.Key.Item2;
             Image corridor = kvp.Value;
 
-            bool aVisible = _visited.Contains(pos) || _scouted.Contains(pos);
-            bool bVisible = _visited.Contains(pos + dir) || _scouted.Contains(pos + dir);
+            // A corridor endpoint counts as "visible" if it's been visited, or if it's
+            // been scouted AND it's not a secret room. This means a corridor leading
+            // into an unvisited secret room stays hidden — no connection is drawn
+            // until the secret room itself has actually been entered.
+            bool aVisible = _visited.Contains(pos) || IsEffectivelyScouted(pos);
+            bool bVisible = _visited.Contains(pos + dir) || IsEffectivelyScouted(pos + dir);
             corridor.color = (aVisible && bVisible) ? colorCorridor : Color.clear;
         }
     }
+
+    /// <summary>
+    /// True if the room placed at this grid position is a Secret room.
+    /// </summary>
+    bool IsSecretRoomAt(Vector2Int pos) =>
+        _placedRooms != null &&
+        _placedRooms.TryGetValue(pos, out var r) &&
+        r.roomType == RoomType.Secret;
+
+    /// <summary>
+    /// Whether a room should be treated as "scouted" for display purposes.
+    /// Secret rooms are deliberately excluded here: being adjacent to a visited
+    /// room is not enough to reveal a secret room's cell or the corridor leading
+    /// to it — only actually visiting it does that (see _visited in RefreshAll).
+    /// </summary>
+    bool IsEffectivelyScouted(Vector2Int pos) =>
+        _scouted.Contains(pos) && !IsSecretRoomAt(pos);
 
     /// <summary>
     /// Returns whichever of the two colors is considered more "prominent" on the minimap.
@@ -717,6 +741,7 @@ public class MinimapUI : MonoBehaviour
         RoomType.Gambling => colorGambling,
         RoomType.Planetarium => colorPlanet,
         RoomType.ChallengeRoom => colorChallenge,
+        RoomType.Secret => colorSecret,
         _ => colorNormal,
     };
 

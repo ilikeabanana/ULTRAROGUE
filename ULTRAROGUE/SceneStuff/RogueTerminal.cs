@@ -26,8 +26,9 @@ public class RogueTerminal : MonoBehaviour
         FillItems();
         CharacterInfo.text = GetCharacterInfo();
 
-        string randomMessage = SceneLoader.messages[Random.Range(0, SceneLoader.messages.Length)];
+        string randomMessage = SceneLoader.GetMessage();
         TipDay.text = randomMessage;
+        TipDay.text += "\n Seed: " + Plugin.GameSeed;
     }
 
     string GetCharacterInfo()

@@ -70,7 +70,7 @@ namespace Ultrarogue.Items
 
     public class HolyLight : BaseItem
     {
-        const float damage = 0.25f;
+        const float damage = 0.35f;
         public override string ItemName => "Holy Light";
         public override string itemDescription => $"Projectiles have a light that damages enemies within by {damage * 100}% (+{damage * 100}% per stack) per 0.25 seconds.";
         public override Rarity Rarity => Rarity.Legendary;
@@ -83,16 +83,31 @@ namespace Ultrarogue.Items
         {
             new ProjectileStartEffect(ItemName, (obj, type) =>
             {
-                if (type == ProjectileType.Projectile)
+                switch (type)
                 {
-                    if (!obj.TryGetComponent<Projectile>(out var proj))
+                    case ProjectileType.Projectile:
+                        if (!obj.TryGetComponent<Projectile>(out var proj))
+                            return;
+                        if (!proj.playerBullet) return;
+                        break;
+                    case ProjectileType.Nail:
+                        if (!obj.TryGetComponent<Nail>(out var nai))
+                            return;
+                        if (nai.enemy) return;
+                        break;
+                    case ProjectileType.Rocket:
+                        if (!obj.TryGetComponent<Grenade>(out var greg))
+                            return;
+                        if (greg.enemy) return;
+                        break;
+                    case ProjectileType.Hitscan:
                         return;
-                    if (!proj.playerBullet) return;
-                    obj.AddComponent<TheLightWeLiveIn>();
-                    GameObject lig = Object.Instantiate(GetLight());
-                    lig.transform.parent = obj.transform;
-                    lig.transform.localPosition = Vector3.zero;
                 }
+
+                GameObject lig = Object.Instantiate(GetLight());
+                lig.transform.parent = obj.transform;
+                lig.transform.localPosition = Vector3.zero;
+                obj.AddComponent<TheLightWeLiveIn>().light = lig;
             });
         }
 
@@ -114,19 +129,33 @@ namespace Ultrarogue.Items
         public class TheLightWeLiveIn : MonoBehaviour
         {
             float dmg = 0;
-            float t = 0;
+            float t = 0.25f;
+
+            public GameObject light;
+
+            Nail n;
             void Awake()
             {
                 dmg = damage * Plugin.GetItemCount("Holy Light");
-
+                n = GetComponent<Nail>();
             }
 
             void Update()
             {
+                if(n != null)
+                {
+                    if (n.currentHitEnemy != null) return;
+                    if (n.hit)
+                    {
+                        Destroy(light);
+                        Destroy(this);
+                    }
+                }
                 t += Time.deltaTime;
 
-                if (t >= 0.25f)
+                if (t >= 0.075f)
                 {
+                    t = 0;
                     List<EnemyIdentifier> eids = EnemyTracker.Instance.GetCurrentEnemies();
                     if (eids.Count <= 0) return;
                     eids = eids.Where((x) => Vector3.Distance(x.transform.position, transform.position) <= 5).ToList();
@@ -312,17 +341,21 @@ namespace Ultrarogue.Items
     public class SplatterShot : BaseItem
     {
         public override string ItemName => "Splatter Shot";
-        public override string itemDescription => "Replace your shotgun pellet with one large, high damage projectile that bursts into 10 (+10 per stack) bullets on hit.";
+        public override string itemDescription => "Replace your shotgun pellet with one large, high damage projectile that bursts into 15 (+15 per stack) bullets on hit.";
         public override Rarity Rarity => Rarity.Legendary;
         public override bool CanSpawn()
         {
             return Plugin.weapons.Any((x) => x.weapon == Plugin.Weapon.Shotgun && !x.Alternate);
         }
+
+        List<GameObject> doneProjs = new List<GameObject>();
+
         public override void OnStart()
         {
             base.OnStart();
             new ProjectileCollideEffect(ItemName, (proj, type, other) =>
             {
+                if (doneProjs.Contains(proj)) return;
                 if (other == null) return;
                 if (!LayerMaskDefaults.IsMatchingLayer(other.layer, LMD.EnemiesAndEnvironment)) return;
                 if (proj.TryGetComponent<ShotOfSplatter>(out var splt))
@@ -335,7 +368,7 @@ namespace Ultrarogue.Items
 
                     int c = Plugin.GetItemCount(this);
 
-                    for (int i = 0; i < 10 * c; i++)
+                    for (int i = 0; i < 15 * c; i++)
                     {
                         GameObject newProj = GameObject.Instantiate(splt.oldProj, proj.transform.position, Quaternion.identity);
                         Projectile projj = newProj.GetComponent<Projectile>();
@@ -351,6 +384,7 @@ namespace Ultrarogue.Items
 
                         newProj.transform.forward = randomDir.normalized;
                     }
+                    doneProjs.Add(proj);
                 }
             });
         }

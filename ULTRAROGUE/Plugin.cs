@@ -1534,6 +1534,12 @@ namespace Ultrarogue
         {
             if (!Plugin.isInRogueScene()) return;
 
+            if (BloodMachine.BloodMachined)
+            {
+                BloodMachine.BloodMachined = false;
+                return;
+            }
+
             int minDamage = 1;
             if (RogueDifficultyManager.Instance != null && RogueDifficultyManager.Instance.floor >= 7)
             {
@@ -2150,7 +2156,7 @@ namespace Ultrarogue
     [HarmonyPatch(typeof(LimboSkybox))]
     public static class LimboSkyboxPatch
     {
-        public static float SkyboxScaleFactor = 16f;
+        public static float SkyboxScaleFactor = 32f;
 
         /// <summary> Edits LimboSkybox.UpdateCamera to replace the hard coded scaling with our own custom thing :3 </summary>
         [HarmonyTranspiler]

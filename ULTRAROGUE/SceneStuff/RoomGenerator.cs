@@ -688,11 +688,7 @@ public class RoomGenerator : MonoBehaviour
             TryPlaceSpecialRoom(ref candidates, currentTheme.gamblingRoomPrefab);
         }
 
-        if(currentTheme.SecretRoomPrefabs.Count > 0)
-        {
-            Room RandomSecretRoom = currentTheme.SecretRoomPrefabs[RogueDifficultyManager.RoomRNG.Next(0, currentTheme.SecretRoomPrefabs.Count)];
-            TryPlaceSpecialRoom(ref candidates, RandomSecretRoom);
-        }
+        
 
 
         if (RogueDifficultyManager.RoomRNG.NextDouble() <= planetChance && currentTheme.planetariumPrefab != null)
@@ -707,6 +703,12 @@ public class RoomGenerator : MonoBehaviour
             {
                 TryPlaceSpecialRoom(ref candidates, prefab);
             }
+        }
+        if (currentTheme.SecretRoomPrefabs.Count > 0)
+        {
+            var secretRoomCandidates = FindDeadEndCandidatesSecretRoom();
+            Room RandomSecretRoom = currentTheme.SecretRoomPrefabs[RogueDifficultyManager.RoomRNG.Next(0, currentTheme.SecretRoomPrefabs.Count)];
+            TryPlaceSpecialRoom(ref secretRoomCandidates, RandomSecretRoom);
         }
     }
 
@@ -727,6 +729,54 @@ public class RoomGenerator : MonoBehaviour
                         neighbourCount++;
 
                 if (neighbourCount == 1 && !deadEnds.Contains(candidate))
+                    deadEnds.Add(candidate);
+            }
+        }
+
+        if (deadEnds.Count < 3)
+            Debug.LogWarning("[RoomGenerator] Fewer than 3 dead-end slots found for special rooms " +
+                             $"({deadEnds.Count} available). Some special rooms may be skipped.");
+
+        return deadEnds;
+    }
+
+    List<Vector2Int> FindDeadEndCandidatesSecretRoom()
+    {
+        var deadEnds = new List<Vector2Int>();
+
+        foreach (var pos in placedRooms.Keys)
+        {
+            foreach (var dir in directions)
+            {
+                Vector2Int candidate = pos + dir;
+                if (placedRooms.ContainsKey(candidate)) continue; // must be an empty cell
+
+                bool allNeighboursQualify = true;
+                int neighbourCount = 0;
+
+                foreach (var d in directions)
+                {
+                    if (!placedRooms.TryGetValue(candidate + d, out Room neighbour)) continue;
+
+                    neighbourCount++;
+
+                    if(neighbour.roomType == RoomType.Start)
+                    {
+                        allNeighboursQualify = false;
+                        break;
+                    }
+
+                    if (neighbour.wallPrefab == null || neighbour.wallPrefab != currentTheme.DefaultCap)
+                    {
+                        allNeighboursQualify = false;
+                        break;
+                    }
+                }
+
+                if (neighbourCount == 0) continue;      // shouldn't happen, but guard anyway
+                if (!allNeighboursQualify) continue;
+
+                if (!deadEnds.Contains(candidate))
                     deadEnds.Add(candidate);
             }
         }

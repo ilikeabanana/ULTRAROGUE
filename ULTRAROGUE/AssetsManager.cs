@@ -47,6 +47,7 @@ public class AssetsManager
     public static GameObject spawnEffect;
     public static GameObject healingEffect;
     public static GameObject nail;
+    public static GameObject BSHead;
     public static AudioClip StalkerWarning;
     public static AudioClip FilthAttack;
 
@@ -106,6 +107,12 @@ public class AssetsManager
             Agony = Addressables
                 .LoadAssetAsync<GameObject>(
                     "Assets/Prefabs/Enemies/SwordsMachine Agony.prefab")
+                .WaitForCompletion();
+
+        if (BSHead == null)
+            BSHead = Addressables
+                .LoadAssetAsync<GameObject>(
+                    "Assets/Particles/Blood/BS Head.prefab")
                 .WaitForCompletion();
 
         if (healingEffect == null)

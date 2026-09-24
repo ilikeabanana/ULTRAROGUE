@@ -18,7 +18,6 @@ public class KeyEater : MonoBehaviour // Yum
     bool canUse = true;
 
     float chanceToPayOut = 0.05f;
-
     float chanceToExplode = 0.01f;
 
     void Update()
@@ -45,7 +44,7 @@ public class KeyEater : MonoBehaviour // Yum
         Vector3 itemPos = transform.position;
         GameObject plc = new GameObject("ItemDropAnchor");
         plc.transform.position = itemPos;
-        plc.transform.parent = transform;
+        plc.transform.parent = transform.parent;
         plc.transform.position += transform.forward * 2f;
         return plc.transform;
     }
@@ -58,10 +57,24 @@ public class KeyEater : MonoBehaviour // Yum
         chanceToPayOut += 0.13f;
         if (RogueDifficultyManager.KeyEaterRNG.NextDouble() <= chanceToPayOut)
         {
+           
             chanceToPayOut = 0.05f;
             GameObject chest = Chest.CreateChest(getPlc(), 1);
-             
-            StartCoroutine(ApplyForce(chest.GetComponent<Rigidbody>()));
+
+            // Random horizontal arc between -35 and +35 degrees.
+            float randomAngle = UnityEngine.Random.Range(-35f, 35f);
+
+            // Rotate the forward direction by the random angle.
+            Vector3 launchDirection = Quaternion.Euler(0f, randomAngle, 0f) * transform.forward;
+
+            chest.GetComponent<Rigidbody>().AddForce(launchDirection * 150f, ForceMode.VelocityChange);
+            //StartCoroutine(ApplyForce(chest.GetComponent<Rigidbody>()));
+            chanceToExplode += 0.15f;
+            if (RogueDifficultyManager.KeyEaterRNG.NextDouble() <= chanceToExplode)
+            {
+                Instantiate(AssetsManager.BSHead, transform.position, Quaternion.identity).SetActive(true);
+                Destroy(gameObject);
+            }
         }
 
 
@@ -69,7 +82,7 @@ public class KeyEater : MonoBehaviour // Yum
 
     IEnumerator ApplyForce(Rigidbody rb)
     {
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.01f);
 
         // Random horizontal arc between -35 and +35 degrees.
         float randomAngle = UnityEngine.Random.Range(-35f, 35f);

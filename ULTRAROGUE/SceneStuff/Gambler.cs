@@ -267,8 +267,12 @@ public class Gambler : MonoBehaviour
         }
         else if (winCoins)
         {
-            RogueDifficultyManager.Instance.Gold++;
-            HudMessageReceiver.Instance.SendHudMessage("You won a coin!");
+            int coinAmount = RogueDifficultyManager.GambleItemRNG.Next(1, 3);
+            RogueDifficultyManager.Instance.Gold += coinAmount;
+
+            string coinText = coinAmount == 1 ? "a coin!" : $"{coinAmount} coins!";
+
+            HudMessageReceiver.Instance.SendHudMessage($"You won {coinText}");
         }
         else if (winKeys)
         {

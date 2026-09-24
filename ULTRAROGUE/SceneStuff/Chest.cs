@@ -10,6 +10,7 @@ using Random = UnityEngine.Random;
 
 public class Chest : MonoBehaviour
 {
+    WallCheck check;
     List<ChestLootpool> pools;
 
     bool pickedUp = false;
@@ -38,6 +39,8 @@ public class Chest : MonoBehaviour
                 Instantiate(filth.gameObject, transform.position, Quaternion.identity).transform.parent = transform.parent;
             }),                                               // Two filth
         };
+
+        check = GetComponentInChildren<WallCheck>();
     }
     void OnEnable()
     {
@@ -58,7 +61,11 @@ public class Chest : MonoBehaviour
             return;
         }
 
-            
+        if (check != null && check.onWall)
+        {
+            GetComponent<Rigidbody>().AddForce(transform.right, ForceMode.VelocityChange);
+            return;
+        }
 
         if (Vector3.Distance(NewMovement.Instance.transform.position, transform.position) <= 2.5f)
         {

@@ -28,6 +28,8 @@ public class FloorTheme : MonoBehaviour
     [Tooltip("SECRET ROOOMMMS")]
     public List<Room> SecretRoomPrefabs = new List<Room>();
 
+    public GameObject DefaultCap;
+
     [Tooltip("Large room prefabs (RoomSizeWidth > 1 or RoomSizeHeight > 1). " +
              "These are never instantiated directly — they are used as data sources " +
              "to spawn sub-room GameObjects that each occupy one grid cell.")]

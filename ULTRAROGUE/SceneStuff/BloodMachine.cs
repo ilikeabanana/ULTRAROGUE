@@ -87,8 +87,9 @@ public class BloodMachine : MonoBehaviour
                 NewMovement.Instance.GetHurt(1, false, ignoreInvincibility: true);
             }
         }
-        
-        
-        RogueDifficultyManager.Instance.Gold++;
+
+
+        int coinAmount = RogueDifficultyManager.BloodRNG.Next(0, 2);
+        RogueDifficultyManager.Instance.Gold += coinAmount;
     }
 }

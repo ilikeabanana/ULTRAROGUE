@@ -9,10 +9,9 @@ namespace Ultrarogue.Characters
     public class Gutterman : BaseCharacter
     {
         public override string Name => "Gutterman";
-        public override string Description => "Start with the Attractor Nail Gun and Spiky nails. Nailgun has infinite ammo. Holding fire increases attack speed gradually";
-        public override string Detail => "Start with Attractor Nail Gun and Spiky Nails. The Nailgun has no limit on how many nails you can fire, and nailbomb kills heal you" +
-            " (clearing rooms also heal you). Have a slight damage reduction of 20%. Holding fire1 causes the attack speed to increase gradually, letting go of fire1 or switching weapons will instantly reset " +
-            " your attackspeed";
+        public override string Description => "Start with the Attractor Nail Gun and Spiky nails. Nailgun has infinite ammo. <color=red>Nailbombs heal you</color>";
+        public override string Detail => "Start with Attractor Nail Gun, Accelerating Minigun and Spiky Nails. The Nailgun has no limit on how many nails you can fire, and nailbomb kills heal you" +
+            " (clearing rooms also heal you). Have a slight damage reduction of 20%.";
 
         public override List<Passive> Passives => new List<Passive>() { Passive.InfiniteAmmo };
         public override List<string> StartingItems => new List<string>() { "Spiky Nails", "Accelerating Minigun" };
@@ -50,7 +49,7 @@ namespace Ultrarogue.Characters
         {
             if (Plugin.SelectedChar.GetType() == typeof(Gutterman))
             {
-                if (pointID == "ultrakill.nailbombed")
+                if (pointID.Contains("nailbomb"))
                 {
                     NewMovement.Instance.GetHealth(25, false);
                 }

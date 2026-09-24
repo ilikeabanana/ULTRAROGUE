@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Steamworks;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -42,9 +43,9 @@ namespace Ultrarogue.Items
 
     public class HeavyPlating : BaseItem
     {
-        const int HealthIncrease = 15;
-        const float speedDecrease = 0.35f;
-
+        const int HealthIncrease = 25;
+        const float speedDecrease = 0.25f;
+         
         public override string ItemName => "Heavy Plating";
         public override string itemDescription => $"+{HealthIncrease} health, -{speedDecrease * 100}% speed.";
 
@@ -526,6 +527,19 @@ namespace Ultrarogue.Items
         const float SpeedPerStack = 0.2f;
 
         public override string ItemName => "Running Shoes";
+        public override string NameDisplayOverride => Funnies();
+
+        string Funnies()
+        {
+            if (SteamClient.IsValid && SteamClient.IsLoggedOn)
+            {
+                if (SteamClient.SteamId == 76561199195414858L)
+                {
+                    return "Sonic Shoes"; // Sonic shoes for linguini because funni :hearth:
+                }
+            }
+            return "";
+        }
         public override string itemDescription => $"Move speed +{SpeedPerStack * 100}%";
         public override List<ItemTag> itemTags => new List<ItemTag>() { ItemTag.Utility };
         Change moveChange;
@@ -758,10 +772,15 @@ namespace Ultrarogue.Items
 
                     GameObject nife = Object.Instantiate(GetKnife(), proj.transform.position, Quaternion.identity);
                     nife.transform.parent = other.transform;
-                    nife.AddComponent<TheKnife>().eid = e;
+                    TheKnife n = nife.AddComponent<TheKnife>();
+                    n.eid = e;
 
-                    if(proj.TryGetComponent<Projectile>(out var p))
+                    if (proj.TryGetComponent<Projectile>(out var p))
                     {
+                        if (p.weaponType.Contains("_splatter"))
+                        {
+                            n.destroyT *= 4f;
+                        }
                         e.hitter = "STAB";
                         e.DeliverDamage(
                             e.gameObject,
@@ -783,10 +802,19 @@ namespace Ultrarogue.Items
         {
             public EnemyIdentifier eid;
             float t;
-            float destroyT = 5f;
+            public float destroyT = 5f;
             void Awake()
             {
                 GetComponent<AudioSource>().Play();
+
+                int shellsC = Plugin.GetItemCount("Bigger Shells");
+                if(shellsC > 0)
+                {
+                    float timeIncrease = 0.12f * shellsC;
+
+                    destroyT *= 1 + timeIncrease;
+                }
+
             }
 
             void Update()

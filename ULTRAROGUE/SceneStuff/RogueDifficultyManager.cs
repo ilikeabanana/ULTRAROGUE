@@ -427,6 +427,11 @@ public class RogueDifficultyManager : MonoBehaviour
             }));
                 options.Add(new BossPick(new List<BossEntry>()
             {
+                new BossEntry(AssetsManager.GetEnemiesOfType(EnemyType.HideousMass)[0].gameObject,
+                    healthAddition: 50, healthPerFloorMod: 15, startFloor: 6),
+            }));
+                options.Add(new BossPick(new List<BossEntry>()
+            {
                 new BossEntry(AssetsManager.GetEnemiesOfType(EnemyType.Minotaur)[0].gameObject,
                     healthAddition: 25),
             }));

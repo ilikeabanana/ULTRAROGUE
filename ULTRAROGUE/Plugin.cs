@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Logging;
 using GameConsole;
@@ -276,14 +276,36 @@ namespace Ultrarogue
             weapons.Clear();
         }
 
+        public static BaseCharacter? LastSelectedCharacter = null;
         public static void LoadLevel(string seed, bool isRestart = false)
         {
-            if(!isRestart)
+            if (!isRestart)
                 Harmony.PatchAll();
             if (string.IsNullOrEmpty(seed))
                 GameSeed = GenerateRandomString(6);
             else
                 GameSeed = seed;
+
+
+            // save last selected character for restart functionality
+            if (SelectedChar != null) LastSelectedCharacter = SelectedChar;
+            else if (LastSelectedCharacter != null) SelectedChar = LastSelectedCharacter;
+            else SelectedChar = characters[0];
+
+            // Restore time flow
+            if (MonoSingleton<TimeController>.Instance != null)
+            {
+                MonoSingleton<TimeController>.Instance.controlTimeScale = true;
+                MonoSingleton<TimeController>.Instance.timeScale = 1f;
+            }
+            Time.timeScale = 1f;
+
+            // Restore Audio system (gets disabled in RogueFinalRank)
+            if (MonoSingleton<AudioMixerController>.Instance != null)
+            {
+                MonoSingleton<AudioMixerController>.Instance.forceOff = false;
+            }
+
             SelectedChar.OnRunStart();
             Reset();
 
@@ -491,9 +513,25 @@ namespace Ultrarogue
             normalMoveSpeed = NewMovement.Instance.walkSpeed;
             normalairAccelaration = NewMovement.Instance.airAcceleration;
             normalJumpHeight = NewMovement.Instance.jumpPower;
+        }
 
+        // Make restart button work
+        [HarmonyPatch(typeof(OptionsManager), nameof(OptionsManager.RestartMission))]
+        [HarmonyPrefix]
+        public static bool OnRestart(OptionsManager __instance)
+        {
+            if (!isInRogueScene()) return true;
 
+            __instance.UnPause();
 
+            if (SelectedChar == null && LastSelectedCharacter != null)
+            {
+                SelectedChar = LastSelectedCharacter;
+            }
+
+            LoadLevel(seed: "", isRestart: true);
+
+            return false;
         }
 
         void Update()
@@ -559,7 +597,7 @@ namespace Ultrarogue
                 RogueDifficultyManager.Instance.MoveStage();
                 HudMessageReceiver.Instance.SendHudMessage($"Difficulty: {RogueDifficultyManager.Instance.Difficulty}");
                 Logger.LogInfo("[DEBUG] Layout ready! Enemies spawned in all non-start rooms.");
-                
+
             }
 
             // ── F6 → Destroy layout ─────────────────────────────────────────────
@@ -815,7 +853,7 @@ namespace Ultrarogue
                 ) && (
                     !x.RequiresAtleastOneWeapon ||
                     weapons.Any()
-                ) && ( 
+                ) && (
                     x.CanSpawn()
                 )
             ).ToList();
@@ -2065,7 +2103,7 @@ namespace Ultrarogue
             if (__instance.eid.dead) return;
             if (__instance.eid.blessed) return;
             if (__instance.eid.enemyType == EnemyType.Idol || __instance.eid.enemyType == EnemyType.Deathcatcher) return;
-            if(__instance.eid.TryGetComponent<BossArmor>(out var arm))
+            if (__instance.eid.TryGetComponent<BossArmor>(out var arm))
             {
                 multiplier = arm.CalculateDamage(multiplier);
             }
@@ -2102,7 +2140,7 @@ namespace Ultrarogue
                 hitEffect.effect.Invoke(__instance.eid, multiplier);
             }
 
-            if (__instance.TryGetComponent<HitEffectTriggerer>(out var hit)) hit.OnGottenHit(multiplier); 
+            if (__instance.TryGetComponent<HitEffectTriggerer>(out var hit)) hit.OnGottenHit(multiplier);
 
         }
         [HarmonyPatch(typeof(Drone), nameof(Drone.GetHurt))]
@@ -2235,7 +2273,7 @@ namespace Ultrarogue
             Plugin.InvokeProjectileCollide(__instance.gameObject, ProjectileType.Projectile, other != null ? other.gameObject : null);
         }
 
-        [HarmonyPatch(typeof(Grenade), nameof(Grenade.Collision), new System.Type[] {typeof(Collider), typeof(Vector3)})]
+        [HarmonyPatch(typeof(Grenade), nameof(Grenade.Collision), new System.Type[] { typeof(Collider), typeof(Vector3) })]
         [HarmonyPostfix]
         public static void GrenadeCollision(Grenade __instance, Collider other, Vector3 velocity)
         {
@@ -2298,7 +2336,7 @@ namespace Ultrarogue
             __instance.cachedActivity.State = "ROGUE MODE";
 
             __instance.cachedActivity.Details = "Floor: " + RogueDifficultyManager.Instance.floor;
-            if(RoomGenerator.Instance.currentTheme.Name.ToLower() == "limbo")
+            if (RoomGenerator.Instance.currentTheme.Name.ToLower() == "limbo")
             {
                 __instance.cachedActivity.Assets.LargeImage = "level_1-1";
             }
@@ -2717,9 +2755,9 @@ namespace Ultrarogue
 
         }
     }
-
-
 }
+
+
 
 // Every day, i imagine a future where i can be with you
 // In my hand is a pen that will write a poem of me and you

@@ -9,9 +9,10 @@
     <Nullable>enable</Nullable>
     <LangVersion>13.0</LangVersion>
     <RootNamespace>Ultrarogue</RootNamespace>
-    <UltrakillDir>C:/Program Files (x86)/Steam/steamapps/common/ULTRAKILL/</UltrakillDir> <!-- Ensure that this has BepInEx installed -->
-    <CopyToBepInExPluginsDir>true</CopyToBepInExPluginsDir>
-    
+    <UltrakillDir>YOUR_PATH_TO_ULTRAKILL</UltrakillDir> <!-- Ensure that this has BepInEx installed -->
+    <UltrakillManagedDir>$(UltrakillDir)ULTRAKILL_Data/Managed/</UltrakillManagedDir>
+    <CopyToBepInExPluginsDir>false</CopyToBepInExPluginsDir>
+
     <RestoreAdditionalProjectSources>
       https://nuget.bepinex.dev/v3/index.json;
       https://nuget.samboy.dev/v3/index.json
@@ -45,61 +46,61 @@
     <PackageReference Include="UltraModding.PluginInfoGenerator" Version="4.*" />
     <PackageReference Include="UnityEngine.Modules" Version="2022.3.28" IncludeAssets="compile" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(UltrakillDir)ULTRAKILL_Data/Managed/Assembly-CSharp.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)Assembly-CSharp.dll</HintPath>
       <Private>false</Private>
       <CopyLocal>false</CopyLocal>
     </Reference>
     <Reference Include="Facepunch.Steamworks.Win64">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\Facepunch.Steamworks.Win64.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)Facepunch.Steamworks.Win64.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="plog">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\plog.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)plog.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Addressables">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\Unity.Addressables.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)Unity.Addressables.dll</HintPath>
     </Reference>
     <Reference Include="Unity.AI.Navigation">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\Unity.AI.Navigation.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)Unity.AI.Navigation.dll</HintPath>
     </Reference>
     <Reference Include="Unity.InputSystem">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\Unity.InputSystem.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)Unity.InputSystem.dll</HintPath>
     </Reference>
     <Reference Include="Unity.ResourceManager">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\Unity.ResourceManager.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)Unity.ResourceManager.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)UnityEngine.ImageConversionModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.InputModule">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\UnityEngine.InputModule.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)UnityEngine.InputModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextCoreFontEngineModule">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\UnityEngine.TextCoreFontEngineModule.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)UnityEngine.TextCoreFontEngineModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextCoreModule">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\UnityEngine.TextCoreModule.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)UnityEngine.TextCoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextCoreTextEngineModule">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\UnityEngine.TextCoreTextEngineModule.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)UnityEngine.TextCoreTextEngineModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)UnityEngine.TextRenderingModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <HintPath>$(UltrakillManagedDir)UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
-  
+
 </Project>

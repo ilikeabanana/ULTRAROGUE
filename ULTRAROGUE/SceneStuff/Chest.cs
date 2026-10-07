@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Ultrarogue;
 using Ultrarogue.SceneStuff;
+using Ultrarogue.Thorn_Modules;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Events;
@@ -49,7 +50,7 @@ public class Chest : MonoBehaviour
         {
             anim.Play("Open", 0, 1);
             anim.Update(0);
-            if (SettingsManager.DestroyChestsOnOpen) Destroy(gameObject);
+            if (SettingsModule.DestroyChestsOnOpen.Value) Destroy(gameObject);
         }
     }
 
@@ -74,7 +75,7 @@ public class Chest : MonoBehaviour
             pickedUp = true;
 
             anim.SetTrigger("Open");
-            if (SettingsManager.DestroyChestsOnOpen)
+            if (SettingsModule.DestroyChestsOnOpen.Value)
                 Destroy(gameObject, 15);
             OpenChest();
         }

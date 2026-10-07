@@ -42,6 +42,8 @@ public class RogueDifficultyManager : MonoBehaviour
     public static System.Random KeyEaterRNG;
     bool keepOpen;
     float doubleTap;
+
+    Dictionary<string, BaseItem> itemRefs; // so the UI can be rebuilt
     void Awake()
     {
 
@@ -58,23 +60,17 @@ public class RogueDifficultyManager : MonoBehaviour
         itemCounts = new Dictionary<string, int>();
         itemUIObjects = new Dictionary<string, GameObject>();
 
-        itemsUI = GameObject.Find("Items").transform.Find("Panel").gameObject;
-        itemsUI.SetActive(true);
-        itemParent = itemsUI.GetComponent<GridLayoutGroup>();
+        itemCounts = new Dictionary<string, int>();
+        itemUIObjects = new Dictionary<string, GameObject>();
+        itemRefs = new Dictionary<string, BaseItem>();
+
+        // Starting items: data only. The icons get built once the Thorn module hands us the grid.
+        foreach (var item in Plugin.items)
+            AddItem(item.Key);
 
         Transform stats = GameObject.Find("Items").transform.Find("Stats");
 
-        statSpeedText = stats.Find("StatSpeed/Stt").GetComponent<TMP_Text>();
-        statDamageText = stats.Find("StatDamage/Stt").GetComponent<TMP_Text>();
-        statAtkSpeedText = stats.Find("StatAtkSpeed/Stt").GetComponent<TMP_Text>();
 
-        if(Plugin.SelectedChar.GetType() == typeof(Filth))
-        {
-            stats.Find("StatAtkSpeed").gameObject.SetActive(false);
-        }
-
-        statCooldownText = stats.Find("StatCooldown/Stt").GetComponent<TMP_Text>();
-        statFloorText = stats.Find("StatFloor/Stt").GetComponent<TMP_Text>();
 
         // Show the starting items
         foreach (var item in Plugin.items)
@@ -118,68 +114,62 @@ public class RogueDifficultyManager : MonoBehaviour
     GameObject charge;
     GameObject currentActiveImage;
 
-    void UpdateStatsUI()
+    public void SetItemParent(GridLayoutGroup parent)
     {
-        if (NewMovement.Instance == null) return;
+        itemParent = parent;
 
-        // Movement speed
-        float speed = NewMovement.Instance.walkSpeed;
-        float baseSpeed = Plugin.Instance.normalMoveSpeed;
+        // Old icons died with the old content object
+        itemUIObjects.Clear();
 
-        float speedMult = speed / baseSpeed;
+        if (itemParent == null) return;
 
-        // Attack speed
-        float atkSpeed = Plugin.AttackSpeed.CalculateChanges(1f);
-
-        // Damage
-        float dmg = Plugin.globalDamageMult.CalculateChanges(1f);
-
-        // Cooldown
-        float cd = Plugin.cooldownReduction.CalculateChanges(1f);
-
-        // Apply text
-        statSpeedText.text = $"x{speedMult:F2}";
-        statDamageText.text = $"x{dmg:F2}";
-        statAtkSpeedText.text = $"x{atkSpeed:F2}";
-        statCooldownText.text = $"x{cd:F2}";
-        statFloorText.text = $"{floor}";
+        foreach (var kvp in itemCounts)
+            CreateOrUpdateIcon(kvp.Key);
     }
-    // Paste this method into RogueDifficultyManager, alongside AddItem().
 
-    public void RemoveItem(BaseItem item, int stacksRemoved = 1)
+    void CreateOrUpdateIcon(string itemKey)
     {
-        if (item == null) return;
+        if (itemParent == null) return;
+        if (!itemRefs.TryGetValue(itemKey, out BaseItem item)) return;
 
-        string itemKey = item.ItemName;
+        int count = itemCounts[itemKey];
 
-        if (!itemCounts.ContainsKey(itemKey)) return;
-
-        itemCounts[itemKey] -= stacksRemoved;
-
-        if (itemCounts[itemKey] <= 0)
+        if (itemUIObjects.TryGetValue(itemKey, out GameObject existing) && existing != null)
         {
-            // Remove the UI object entirely
-            itemCounts.Remove(itemKey);
-
-            if (itemUIObjects.TryGetValue(itemKey, out GameObject uiObj) && uiObj != null)
-                Destroy(uiObj);
-
-            itemUIObjects.Remove(itemKey);
+            TMP_Text label = existing.GetComponentInChildren<TMP_Text>();
+            if (label != null) label.text = count > 1 ? $"(x{count})" : "";
+            return;
         }
-        else
-        {
-            // Update the stack count label
-            if (itemUIObjects.TryGetValue(itemKey, out GameObject uiObj) && uiObj != null)
-            {
-                TMP_Text countLabel = uiObj.GetComponentInChildren<TMP_Text>();
-                if (countLabel != null)
-                {
-                    int remaining = itemCounts[itemKey];
-                    countLabel.text = remaining > 1 ? $"(x{remaining})" : "";
-                }
-            }
-        }
+
+        GameObject container = new GameObject(itemKey);
+        container.transform.SetParent(itemParent.transform, false);
+
+        Image icon = container.AddComponent<Image>();
+        if (item.ItemIcon != null) icon.sprite = item.ItemIcon;
+        else Plugin.Logger.LogWarning($"Item '{itemKey}' has no icon!");
+        if (item.materialOverride != null) icon.material = item.materialOverride;
+
+        container.AddComponent<ItemHoverHandler>().Item = item;
+
+        GameObject labelObj = new GameObject("CountLabel");
+        labelObj.transform.SetParent(container.transform, false);
+
+        TMP_Text countText = labelObj.AddComponent<TextMeshProUGUI>();
+        countText.text = count > 1 ? $"(x{count})" : "";
+        countText.fontSize = 14;
+        countText.alignment = TextAlignmentOptions.BottomRight;
+        countText.color = Color.white;
+        countText.raycastTarget = false;
+
+        RectTransform rt = labelObj.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+
+        itemUIObjects[itemKey] = container;
     }
+
     public void AddItem(BaseItem item)
     {
         if (item == null)
@@ -188,120 +178,45 @@ public class RogueDifficultyManager : MonoBehaviour
             return;
         }
 
-        if (itemParent == null)
-        {
-            Plugin.Logger.LogError("itemParent is not assigned in the Inspector!");
-            
-            return;
-        }
+        string itemKey = item.ItemName;
+        itemRefs[itemKey] = item;
+        itemCounts[itemKey] = itemCounts.TryGetValue(itemKey, out int c) ? c + 1 : 1;
+
+        CreateOrUpdateIcon(itemKey); // no-op if the Thorn module isn't up yet
+    }
+
+    public void RemoveItem(BaseItem item, int stacksRemoved = 1)
+    {
+        if (item == null) return;
 
         string itemKey = item.ItemName;
+        if (!itemCounts.ContainsKey(itemKey)) return;
 
-        if (itemCounts.ContainsKey(itemKey))
+        itemCounts[itemKey] -= stacksRemoved;
+
+        if (itemCounts[itemKey] <= 0)
         {
-            itemCounts[itemKey]++;
+            itemCounts.Remove(itemKey);
+            itemRefs.Remove(itemKey);
 
-            if (itemUIObjects.TryGetValue(itemKey, out GameObject existingUI) && existingUI != null)
-            {
-                TMP_Text countLabel = existingUI.GetComponentInChildren<TMP_Text>();
-                if (countLabel != null)
-                    countLabel.text = $"(x{itemCounts[itemKey]})";
-            }
+            if (itemUIObjects.TryGetValue(itemKey, out GameObject uiObj) && uiObj != null)
+                Destroy(uiObj);
+            itemUIObjects.Remove(itemKey);
         }
         else
         {
-            itemCounts[itemKey] = 1;
-
-            GameObject container = new GameObject(itemKey);
-            container.transform.SetParent(itemParent.transform, false);
-
-            Image icon = container.AddComponent<Image>();
-            if (item.ItemIcon != null)
-                icon.sprite = item.ItemIcon;
-            else
-                Plugin.Logger.LogWarning($"Item '{itemKey}' has no icon!");
-
-            if(item.materialOverride != null)
-                icon.material = item.materialOverride;
-
-            ItemHoverHandler hover = container.AddComponent<ItemHoverHandler>();
-            hover.Item = item;
-            GameObject labelObj = new GameObject("CountLabel");
-            labelObj.transform.SetParent(container.transform, false);
-
-            TMP_Text countText = labelObj.AddComponent<TextMeshProUGUI>();
-            countText.text = "";
-            countText.fontSize = 14;
-            countText.alignment = TextAlignmentOptions.BottomRight;
-            countText.color = Color.white;
-
-            RectTransform rt = labelObj.GetComponent<RectTransform>();
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-
-            itemUIObjects[itemKey] = container;
+            CreateOrUpdateIcon(itemKey);
         }
     }
-
-    GameObject itemsUI;
-    private TMP_Text statSpeedText;
-    private TMP_Text statDamageText;
-    private TMP_Text statAtkSpeedText;
-    private TMP_Text statCooldownText;
-    private TMP_Text statFloorText;
 
     void Update()
     {
         Gold = Mathf.Clamp(Gold, 0, 99);
         Keys = Mathf.Clamp(Keys, 0, 99);
-         
-        if (!this.keepOpen)
-        {
-            if (MonoSingleton<InputManager>.Instance.InputSource.Stats.WasPerformedThisFrame)
-            {
-                if (!this.keepOpen)
-                {
-                    if (this.doubleTap > 0f)
-                    {
-                        this.keepOpen = true;
-                    }
-                    else
-                    {
-                        this.doubleTap = 0.5f;
-                    }
-                }
-                itemsUI.SetActive(true);
-                statDamageText.transform.parent.parent.gameObject.SetActive(true);
-                if(MinimapUI.Instance != null)
-                    MinimapUI.Instance.minimapPanel.gameObject.SetActive(true);
-            }
-            else if (MonoSingleton<InputManager>.Instance.InputSource.Stats.WasCanceledThisFrame)
-            {
-                itemsUI.SetActive(false);
-                statDamageText.transform.parent.parent.gameObject.SetActive(false);
-                if (MinimapUI.Instance != null)
-                    MinimapUI.Instance.minimapPanel.gameObject.SetActive(false);
-            }
-        }
-        else if (MonoSingleton<InputManager>.Instance.InputSource.Stats.WasPerformedThisFrame)
-        {
-            this.keepOpen = false;
-            itemsUI.SetActive(false);
-            statDamageText.transform.parent.parent.gameObject.SetActive(false);
-            if (MinimapUI.Instance != null)
-                MinimapUI.Instance.minimapPanel.gameObject.SetActive(false);
-        }
-        if (this.doubleTap > 0f)
-        {
-            this.doubleTap = Mathf.MoveTowards(this.doubleTap, 0f, Time.deltaTime);
-        }
 
         Difficulty += (Time.deltaTime / 180) * difficultyScaleMult;
         goldText.text = Gold.ToString();
         keyText.text = Keys.ToString();
-        UpdateStatsUI();
     }
 
     public void MoveStage()
@@ -718,20 +633,36 @@ public class ItemTooltip : MonoBehaviour
     private TMP_Text nameText;
     private TMP_Text descText;
     private RectTransform rectTransform;
+    private RectTransform canvasRect;
+    private Camera uiCamera;
+
+    public static ItemTooltip GetOrCreate(Canvas rootCanvas)
+    {
+        if (rootCanvas == null) return null;
+
+        if (Instance != null && Instance.canvasRect == rootCanvas.transform)
+            return Instance;
+
+        if (Instance != null) Destroy(Instance.gameObject);
+
+        GameObject host = new GameObject("ItemTooltip", typeof(RectTransform));
+        host.transform.SetParent(rootCanvas.transform, false);
+        host.transform.SetAsLastSibling(); // draw on top
+        var tip = host.AddComponent<ItemTooltip>();
+        tip.canvasRect = rootCanvas.GetComponent<RectTransform>();
+        Instance = tip;
+        return tip;
+    }
 
     void Awake()
     {
-        Instance = this;
-
-        // Build the tooltip panel dynamically
         panel = new GameObject("TooltipPanel");
         panel.transform.SetParent(transform, false);
 
-        // Background image
         Image bg = panel.AddComponent<Image>();
         bg.color = new Color(0f, 0f, 0f, 0.85f);
+        bg.raycastTarget = false; // otherwise it steals the hover and flickers
 
-        // Layout
         VerticalLayoutGroup layout = panel.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset(8, 8, 6, 6);
         layout.spacing = 4f;
@@ -743,32 +674,38 @@ public class ItemTooltip : MonoBehaviour
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         rectTransform = panel.GetComponent<RectTransform>();
-        rectTransform.pivot = new Vector2(0f, 1f); // anchor top-left to cursor
+        rectTransform.pivot = new Vector2(0f, 1f);
+        rectTransform.anchorMin = rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
 
-        // Item name label
         GameObject nameObj = new GameObject("TooltipName");
         nameObj.transform.SetParent(panel.transform, false);
         nameText = nameObj.AddComponent<TextMeshProUGUI>();
         nameText.fontSize = 16;
         nameText.fontStyle = TMPro.FontStyles.Bold;
         nameText.color = Color.yellow;
+        nameText.raycastTarget = false;
 
-        // Item description label
         GameObject descObj = new GameObject("TooltipDesc");
         descObj.transform.SetParent(panel.transform, false);
         descText = descObj.AddComponent<TextMeshProUGUI>();
         descText.fontSize = 13;
         descText.color = Color.white;
+        descText.raycastTarget = false;
 
-        // Clamp width so long descriptions wrap nicely
         LayoutElement le = descObj.AddComponent<LayoutElement>();
         le.preferredWidth = 220f;
 
         Hide();
     }
 
-    public void Show(string itemName, string description, Vector2 screenPos)
+    void OnDestroy()
     {
+        if (Instance == this) Instance = null;
+    }
+
+    public void Show(string itemName, string description, Vector2 screenPos, Camera cam)
+    {
+        uiCamera = cam;
         nameText.text = itemName;
         descText.text = description;
         panel.SetActive(true);
@@ -777,7 +714,7 @@ public class ItemTooltip : MonoBehaviour
 
     public void Hide()
     {
-        panel.SetActive(false);
+        if (panel != null) panel.SetActive(false);
     }
 
     void Update()
@@ -788,17 +725,10 @@ public class ItemTooltip : MonoBehaviour
 
     void UpdatePosition(Vector2 screenPos)
     {
-        // Convert screen pos to canvas local pos
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            transform.parent.GetComponent<RectTransform>(), // assumes tooltip is on the HUD canvas
-            screenPos,
-            null,
-            out Vector2 localPoint
-        );
+        if (canvasRect == null) return;
 
-        // Nudge so it doesn't sit right under the cursor
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCamera, out Vector2 localPoint);
         localPoint += new Vector2(12f, -8f);
-
         rectTransform.anchoredPosition = localPoint;
     }
 }
@@ -809,13 +739,17 @@ public class ItemHoverHandler : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (Item == null || ItemTooltip.Instance == null) return;
+        if (Item == null) return;
 
-        string desc = string.IsNullOrEmpty(Item.itemDescription)
-            ? "No description available."
-            : Item.itemDescription;
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas != null) canvas = canvas.rootCanvas;
+
+        ItemTooltip tip = ItemTooltip.GetOrCreate(canvas);
+        if (tip == null) return;
+
+        string desc = string.IsNullOrEmpty(Item.itemDescription) ? "No description available." : Item.itemDescription;
         string name = string.IsNullOrEmpty(Item.NameDisplayOverride) ? Item.ItemName : Item.NameDisplayOverride;
-        ItemTooltip.Instance.Show(name, desc, eventData.position);
+        tip.Show(name, desc, eventData.position, eventData.enterEventCamera);
     }
 
     public void OnPointerExit(PointerEventData eventData)

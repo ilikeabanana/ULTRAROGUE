@@ -17,6 +17,7 @@ using UnityEngine.AI;
 using static Ultrarogue.Plugin;
 using Random = UnityEngine.Random;
 using Ultrarogue.Behaviours;
+using Ultrarogue.Thorn_Modules;
 
 public enum RoomType
 {
@@ -1001,7 +1002,7 @@ public class Room : MonoBehaviour
                 }
                 else if (chanceVal <= 0.44f)
                 {
-                    if(SettingsManager.CoinPickups)
+                    if(SettingsModule.CoinPickups.Value)
                         KeyPickup.CreatePickup(getPlc());
                     else
                         RogueDifficultyManager.Instance.Keys++;
@@ -1023,7 +1024,7 @@ public class Room : MonoBehaviour
                     int goldAmount = enemyRando.Next(1, tookNoDamage ? 4 : 3);
 
                     HudMessageReceiver.Instance.SendHudMessage($"You received {goldAmount} gold");
-                    if (!SettingsManager.CoinPickups)
+                    if (!SettingsModule.CoinPickups.Value)
                         RogueDifficultyManager.Instance.Gold += goldAmount;
                     else
                         for (int i = 0; i < goldAmount; i++)

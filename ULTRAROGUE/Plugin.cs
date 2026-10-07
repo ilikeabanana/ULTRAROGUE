@@ -32,6 +32,7 @@ using Random = UnityEngine.Random;
 namespace Ultrarogue
 {
     [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+    [BepInDependency("com.github.end-4.thornClient")]
     public class Plugin : BaseUnityPlugin
     {
         public static Harmony Harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -150,7 +151,7 @@ namespace Ultrarogue
 
         public float normalMoveSpeed = 0f;
         public float normalairAccelaration = 0f;
-        float normalJumpHeight = 0f;
+        public float normalJumpHeight = 0f;
         public static int MaxHealth = 100;
         public static Change AttackSpeed;
         public static Change DamageReduction;
@@ -278,7 +279,7 @@ namespace Ultrarogue
 
         public static void LoadLevel(string seed, bool isRestart = false)
         {
-            if(!isRestart)
+            if (!isRestart)
                 Harmony.PatchAll();
             if (string.IsNullOrEmpty(seed))
                 GameSeed = GenerateRandomString(6);
@@ -358,9 +359,6 @@ namespace Ultrarogue
             AsyncOperationHandle<GameObject> RogueMenu = Addressables.LoadAssetAsync<GameObject>("Assets/Modding/RogueMode/RogueMenu.prefab");
             yield return new WaitUntil(() => RogueMenu.IsDone);
             GameObject parentMen = GameObject.FindObjectOfType<OptionsMenuToManager>().gameObject;
-
-            AssetsManager.RogueInputs = Addressables.LoadAssetAsync<InputActionAsset>("Assets/Modding/RogueMode/UltrarogueActions.inputactions").WaitForCompletion();
-            AssetsManager.RogueInputs.Enable();
             GameObject men = Instantiate(RogueMenu.Result, parentMen.transform);
             men.SetActive(false);
 
@@ -376,27 +374,10 @@ namespace Ultrarogue
                 LoadLevel(seedField.text);
             });
 
-
-            AssetsManager.UseActiveKey = AssetsManager.RogueInputs.FindAction("Use Active", true);
-            var scheme = AssetsManager.RogueInputs.controlSchemes[0];
-
             if (FirstLoad)
             {
-                RogueInputSave.CaptureDefaults(AssetsManager.UseActiveKey, scheme); // must come first
-                RogueInputSave.LoadBindings(AssetsManager.UseActiveKey, scheme);
                 FirstLoad = false;
             }
-
-            var existing = men.GetComponentInChildren<ControlsOptionsKey>(true);
-            var rogueKey = existing.gameObject.AddComponent<RogueControlsOptionsKey>();
-
-            rogueKey.Init(existing);
-            Destroy(existing);
-            rogueKey.RebuildBindings(AssetsManager.UseActiveKey, scheme);
-
-            Destroy(existing);
-            rogueKey.Init(existing);
-            rogueKey.RebuildBindings(AssetsManager.UseActiveKey, scheme);
 
 
             TMP_Text info = men.transform.Find("Info/InfoText").GetComponent<TMP_Text>();
@@ -451,18 +432,6 @@ namespace Ultrarogue
                 yield return new WaitUntil(() => Warning.IsDone);
                 GameObject Warn = Instantiate(Warning.Result, parentMen.transform);
             }
-
-            Toggle chestToggle = men.transform.Find("SettingsPanel/ChestOpen").GetComponentInChildren<Toggle>();
-            Toggle coinToggle = men.transform.Find("SettingsPanel/CoinPickup").GetComponentInChildren<Toggle>();
-            Toggle activeToggle = men.transform.Find("SettingsPanel/AutoActive").GetComponentInChildren<Toggle>();
-
-            chestToggle.isOn = SettingsManager.DestroyChestsOnOpen;
-            coinToggle.isOn = SettingsManager.CoinPickups;
-            activeToggle.isOn = SettingsManager.AutoActive;
-
-            chestToggle.onValueChanged.AddListener((x) => SettingsManager.DestroyChestsOnOpen = x);
-            coinToggle.onValueChanged.AddListener((x) => SettingsManager.CoinPickups = x);
-            activeToggle.onValueChanged.AddListener((x) => SettingsManager.AutoActive = x);
         }
 
         private void SceneManager_sceneLoaded(Scene arg0, LoadSceneMode arg1)
@@ -815,7 +784,7 @@ namespace Ultrarogue
                 ) && (
                     !x.RequiresAtleastOneWeapon ||
                     weapons.Any()
-                ) && ( 
+                ) && (
                     x.CanSpawn()
                 )
             ).ToList();
@@ -1398,9 +1367,28 @@ namespace Ultrarogue
         {
             return Plugin.getWeaponString(weapon, variant);
         }
+
     }
 
     #region Patches
+
+    [HarmonyPatch]
+    public class SpawnablePatches
+    {
+        public static bool DoneSpawnMenu;
+        [HarmonyPatch(typeof(SpawnMenu), nameof(SpawnMenu.Awake)), HarmonyPrefix]
+        public static void AddRevenantToArm(SpawnMenu __instance)
+        {
+            // Gotta implement this :O
+            if (DoneSpawnMenu)
+            {
+                return;
+            }
+
+            //__instance.objects.sandboxObjects = __instance.objects.enemies.Concat(new SpawnableObject[] { RevenantSpawnable }).ToArray();
+            DoneSpawnMenu = true;
+        }
+    }
 
     [HarmonyPatch]
     public class WeaponPatches
@@ -2065,7 +2053,7 @@ namespace Ultrarogue
             if (__instance.eid.dead) return;
             if (__instance.eid.blessed) return;
             if (__instance.eid.enemyType == EnemyType.Idol || __instance.eid.enemyType == EnemyType.Deathcatcher) return;
-            if(__instance.eid.TryGetComponent<BossArmor>(out var arm))
+            if (__instance.eid.TryGetComponent<BossArmor>(out var arm))
             {
                 multiplier = arm.CalculateDamage(multiplier);
             }
@@ -2102,7 +2090,7 @@ namespace Ultrarogue
                 hitEffect.effect.Invoke(__instance.eid, multiplier);
             }
 
-            if (__instance.TryGetComponent<HitEffectTriggerer>(out var hit)) hit.OnGottenHit(multiplier); 
+            if (__instance.TryGetComponent<HitEffectTriggerer>(out var hit)) hit.OnGottenHit(multiplier);
 
         }
         [HarmonyPatch(typeof(Drone), nameof(Drone.GetHurt))]
@@ -2235,7 +2223,7 @@ namespace Ultrarogue
             Plugin.InvokeProjectileCollide(__instance.gameObject, ProjectileType.Projectile, other != null ? other.gameObject : null);
         }
 
-        [HarmonyPatch(typeof(Grenade), nameof(Grenade.Collision), new System.Type[] {typeof(Collider), typeof(Vector3)})]
+        [HarmonyPatch(typeof(Grenade), nameof(Grenade.Collision), new System.Type[] { typeof(Collider), typeof(Vector3) })]
         [HarmonyPostfix]
         public static void GrenadeCollision(Grenade __instance, Collider other, Vector3 velocity)
         {
@@ -2298,7 +2286,7 @@ namespace Ultrarogue
             __instance.cachedActivity.State = "ROGUE MODE";
 
             __instance.cachedActivity.Details = "Floor: " + RogueDifficultyManager.Instance.floor;
-            if(RoomGenerator.Instance.currentTheme.Name.ToLower() == "limbo")
+            if (RoomGenerator.Instance.currentTheme.Name.ToLower() == "limbo")
             {
                 __instance.cachedActivity.Assets.LargeImage = "level_1-1";
             }

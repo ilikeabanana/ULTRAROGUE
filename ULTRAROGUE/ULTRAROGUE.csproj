@@ -61,6 +61,12 @@
     <Reference Include="plog">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\plog.dll</HintPath>
     </Reference>
+    <Reference Include="ThornClient">
+      <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\ultrarogue\BepInEx\plugins\end_4-Thorn_Core\Thorn_Core\ThornClient.dll</HintPath>
+    </Reference>
+    <Reference Include="ThornClientModules">
+      <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\ultrarogue\BepInEx\plugins\end_4-Thorn\Thorn\ThornClientModules.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.Addressables">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ULTRAKILL\ULTRAKILL_Data\Managed\Unity.Addressables.dll</HintPath>
     </Reference>

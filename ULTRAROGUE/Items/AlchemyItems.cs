@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -86,6 +85,44 @@ namespace Ultrarogue.Items
                 amazingChange.percentage = Mathf.Max(MinPercentage, amazingChange.percentage - (DecayPerHitPerStack * c));
             });
             new PlayerChange(amazingChange, attackSpeed: amazingChange, cooldownReduction: amazingChange, globalDamageMult: amazingChange);
+        }
+    }
+
+    public class BloodOath : BaseItem
+    {
+        const float DamageAddition = 0.05f;
+        const int HealthLeft = 20;
+        const int damage = 25;
+
+        public override string ItemName => "Blood Oath";
+        public override string itemDescription => $"Upon entering a new floor, continuously damage yourself by {damage} until you are at {HealthLeft} hp" +
+            $", Gain +{DamageAddition}% (+{DamageAddition}% per stack) for every damage taken.";
+
+        Change dmgChange;
+
+        public override void OnStart()
+        {
+            new PlayerChange(globalDamageMult: dmgChange);
+        }
+
+        public override void OnNewFloor(int count)
+        {
+            base.OnNewFloor(count);
+            float damageToAdd = 0;
+
+            dmgChange.percentage = 0;
+            while (NewMovement.Instance.hp > HealthLeft)
+            {
+                BloodMachine.BloodMachined = true; // Prevent on damage effects to execute.
+                NewMovement.Instance.GetHurt(damage, false);
+                BloodMachine.BloodMachined = false;
+
+                Object.Instantiate(AssetsManager.BSHead, NewMovement.Instance.transform.position, Quaternion.identity); // Blood effects.
+
+                damageToAdd += DamageAddition; // Add onto the damage
+            }
+
+            dmgChange.percentage = damageToAdd;
         }
     }
     public class WildCard : ActiveItem

@@ -59,11 +59,6 @@ public class AssetsManager
     public static GameObject CoinPrefab;
 
 
-
-    public static InputActionAsset RogueInputs;
-    public static InputAction UseActiveKey;
-
-
     private static bool _initStarted = false;
 
     public static void Init()

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using Ultrarogue.Items;
+using Ultrarogue.Thorn_Modules;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -97,7 +98,7 @@ namespace Ultrarogue.SceneStuff
         void Start()
         {
             CurrentActiveItemImage.GetComponentInChildren<TMP_Text>().text =
-                AssetsManager.UseActiveKey.GetBindingDisplayString();
+                SettingsModule.ActiveKeyCode.Value.ToString();
         }
         void Update()
         {
@@ -110,7 +111,7 @@ namespace Ultrarogue.SceneStuff
             }
             CurrentActiveItemImage.color = Color.white;
             if (CurrentActive == null) return;
-            if ((AssetsManager.UseActiveKey.WasPerformedThisFrame() || (CurrentActive.CanAutoActivate() && SettingsManager.AutoActive)) && GunControl.Instance.activated)
+            if ((Input.GetKeyDown(SettingsModule.ActiveKeyCode.Value) || (CurrentActive.CanAutoActivate() && SettingsModule.AutoActive.Value)) && GunControl.Instance.activated)
             {
 
                 charges[CurrentActive] = 0;

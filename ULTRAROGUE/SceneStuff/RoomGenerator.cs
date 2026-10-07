@@ -1070,10 +1070,10 @@ public class RoomGenerator : MonoBehaviour
     }
 
     // ─── Connection finalization ──────────────────────────────────────────────
-
+    HashSet<(Vector2Int pos, Vector2Int dir)> validConnections = new HashSet<(Vector2Int pos, Vector2Int dir)>();
     void FinalizeConnections()
     {
-        var validConnections = new HashSet<(Vector2Int pos, Vector2Int dir)>();
+        validConnections = new HashSet<(Vector2Int pos, Vector2Int dir)>();
 
         foreach (var kvp in placedRooms)
         {
@@ -1108,6 +1108,14 @@ public class RoomGenerator : MonoBehaviour
         if (MinimapUI.Instance != null)
             MinimapUI.Instance.BuildMinimap(placedRooms, validConnections,
                                             _largeRoomAnchorOf, _largeRoomCells);
+    }
+
+    public void SetupMinimap()
+    {
+        if (MinimapUI.Instance != null)
+            MinimapUI.Instance.BuildMinimap(placedRooms, validConnections,
+                                            _largeRoomAnchorOf, _largeRoomCells);
+
     }
     // ─── Connectivity repair ──────────────────────────────────────────────────────
 
